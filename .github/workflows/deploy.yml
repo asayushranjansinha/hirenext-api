@@ -57,12 +57,13 @@ jobs:
         run: |
           DEPLOY_DIR="/opt/ec-2-test"
           sudo mkdir -p "$DEPLOY_DIR"
-          # stop old app if running
           pm2 stop backend 2>/dev/null || echo "App not running"
-          # copy built files and package files
+          # copy built files, package files, AND generated prisma client
           sudo cp -r ./dist "$DEPLOY_DIR/"
           sudo cp package.json package-lock.json "$DEPLOY_DIR/"
-          # ensure ownership so npm can run without root issues
+          sudo cp -r ./node_modules/@prisma "$DEPLOY_DIR/node_modules/" || echo "Creating node_modules dir first"
+          sudo mkdir -p "$DEPLOY_DIR/node_modules"
+          sudo cp -r ./node_modules/@prisma "$DEPLOY_DIR/node_modules/"
           sudo chown -R $(whoami):$(whoami) "$DEPLOY_DIR"
           echo "Application files deployed to $DEPLOY_DIR"
 
