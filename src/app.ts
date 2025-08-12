@@ -1,7 +1,7 @@
 import { envConfig } from "@/config/env-config.js";
 import prisma from "@/config/prisma-config.js";
-import { UserRole } from "@prisma/client";
 import express from "express";
+import { UserRole } from "./generated/prisma/enums.js";
 
 export const createApp = (): express.Application => {
   const app = express();
