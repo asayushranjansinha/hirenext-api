@@ -64,13 +64,13 @@ jobs:
       - name: Start or restart backend with PM2
         run: |
           cd /opt/ec-2-test
-          pm2 describe backend > /dev/null
-          if [ $? -eq 0 ]; then
-            pm2 restart backend
-            echo "Backend restarted"
+          if pm2 describe backend > /dev/null 2>&1; then
+          pm2 restart backend
+          echo "Backend restarted"
           else
             pm2 start dist/index.js --name backend
             echo "Backend started"
           fi
           pm2 save
+
 
