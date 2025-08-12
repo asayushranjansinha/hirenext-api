@@ -27,6 +27,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+
+      - name: Create backend .env file
+        run: |
+          echo "${{ secrets.PROD_BACKEND_ENV }}" > /opt/ec-2-test/.env
+          sudo chown $USER:$USER /opt/ec-2-test/.env
+
       - name: Generate Prisma Client
         run: npx prisma generate
 
@@ -46,11 +52,6 @@ jobs:
           sudo cp package.json package-lock.json "$DEPLOY_DIR/"
           sudo chown -R $USER:$USER "$DEPLOY_DIR"
           echo "Application files deployed to $DEPLOY_DIR"
-
-      - name: Create backend .env file
-        run: |
-          echo "${{ secrets.PROD_BACKEND_ENV }}" > /opt/ec-2-test/.env
-          sudo chown $USER:$USER /opt/ec-2-test/.env
 
       - name: Install production dependencies
         run: |
