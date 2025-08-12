@@ -61,9 +61,7 @@ jobs:
           # copy built files, package files, AND generated prisma client
           sudo cp -r ./dist "$DEPLOY_DIR/"
           sudo cp package.json package-lock.json "$DEPLOY_DIR/"
-          sudo cp -r ./src/generated/prisma "$DEPLOY_DIR/src/generated/" || echo "Creating node_modules dir first"
           sudo mkdir -p "$DEPLOY_DIR/node_modules"
-          sudo cp -r ./src/generated/prisma "$DEPLOY_DIR/src/generated/"
           sudo chown -R $(whoami):$(whoami) "$DEPLOY_DIR"
           echo "Application files deployed to $DEPLOY_DIR"
 
