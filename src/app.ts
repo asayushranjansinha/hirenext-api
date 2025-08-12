@@ -9,7 +9,7 @@ export const createApp = (): express.Application => {
   app.use(express.urlencoded({ extended: true }));
 
   // Add routes
-  app.get("/", (_req, res) => {
+  app.get("/api", (_req, res) => {
     res.json({
       message: "Welcome to API",
       success: true,
@@ -19,7 +19,7 @@ export const createApp = (): express.Application => {
   });
 
   // Health check
-  app.get("/health", (_req, res) => {
+  app.get("/api/health", (_req, res) => {
     res.json({
       message: "API is running",
       success: true,
