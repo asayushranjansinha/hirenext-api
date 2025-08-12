@@ -1,0 +1,76 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix['node-version'] }}
+          cache: 'npm'
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          echo "Installing project dependencies..."
+          npm ci  # Use ci instead of install for production deployments
+
+      # Step 4: Build the TypeScript application
+      - name: Build application
+        run: |
+          echo "Building TypeScript application..."
+          npm run build
+          echo "Build completed successfully"
+
+      # Step 5: Deploy application files
+      - name: Deploy application files
+        run: |
+          DEPLOY_DIR="/opt/ec-2-test"
+          sudo mkdir -p $DEPLOY_DIR
+          pm2 stop backend 2>/dev/null || echo "App not running"
+          sudo cp -r ./dist/* $DEPLOY_DIR/
+          sudo cp package.json $DEPLOY_DIR/
+          sudo cp package-lock.json $DEPLOY_DIR/
+          sudo chown -R $USER:$USER $DEPLOY_DIR
+          echo "Application files deployed to $DEPLOY_DIR"
+
+      # Step 6: Install production dependencies
+      - name: Install production dependencies
+        run: |
+          cd /opt/ec-2-test
+          npm ci --only=production
+          echo "Production dependencies installed"
+
+      - name: Create backend .env file
+        run: |
+          echo "${{ secrets.PROD_BACKEND_ENV }}" > /opt/ec-2-test/.env
+          sudo chown $USER:$USER /opt/ec-2-test/.env
+
+      # Step 7: Start or restart app with PM2
+      - name: Start or restart backend with PM2
+        run: |
+          cd /opt/ec-2-test
+          pm2 describe backend > /dev/null
+          if [ $? -eq 0 ]; then
+            pm2 restart backend
+            echo "Backend restarted"
+          else
+            pm2 start dist/index.js --name backend
+            echo "Backend started"
+          fi
+          pm2 save
+
