@@ -24,41 +24,67 @@ jobs:
           node-version: ${{ matrix['node-version'] }}
           cache: 'npm'
 
+      # Install all deps (including dev) so prisma CLI & tools are available
       - name: Install dependencies
         run: npm ci
 
-
-      - name: Create backend .env file
+      # Create .env in the repo workspace so Prisma reads it during generate/migrate
+      - name: Create workspace .env from secret
+        env:
+          PROD_BACKEND_ENV: ${{ secrets.PROD_BACKEND_ENV }}
         run: |
-          echo "${{ secrets.PROD_BACKEND_ENV }}" > /opt/ec-2-test/.env
-          sudo chown $USER:$USER /opt/ec-2-test/.env
+          if [ -z "$PROD_BACKEND_ENV" ]; then
+            echo "ERROR: PROD_BACKEND_ENV secret is empty"
+            exit 1
+          fi
+          printf '%s\n' "$PROD_BACKEND_ENV" > .env
+          echo ".env created in workspace"
 
+      # Generate client before build so TypeScript/JS build can import @prisma/client
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Migrate database
-        run: npx prisma migrate deploy
-
+      # Build the application (this will pick up generated client if needed)
       - name: Build application
         run: npm run build
 
+      # Run migrations against production DB
+      - name: Migrate database (production)
+        run: npx prisma migrate deploy
+
+      # Deploy built files to server path
       - name: Deploy application files
         run: |
           DEPLOY_DIR="/opt/ec-2-test"
           sudo mkdir -p "$DEPLOY_DIR"
+          # stop old app if running
           pm2 stop backend 2>/dev/null || echo "App not running"
-          # Copy the entire dist folder so structure is preserved
+          # copy built files and package files
           sudo cp -r ./dist "$DEPLOY_DIR/"
           sudo cp package.json package-lock.json "$DEPLOY_DIR/"
-          sudo chown -R $USER:$USER "$DEPLOY_DIR"
+          # ensure ownership so npm can run without root issues
+          sudo chown -R $(whoami):$(whoami) "$DEPLOY_DIR"
           echo "Application files deployed to $DEPLOY_DIR"
 
+      # Copy .env to the deploy dir for the runtime
+      - name: Create backend .env in deploy dir
+        env:
+          PROD_BACKEND_ENV: ${{ secrets.PROD_BACKEND_ENV }}
+        run: |
+          DEPLOY_DIR="/opt/ec-2-test"
+          printf '%s\n' "$PROD_BACKEND_ENV" > /tmp/.env_prod
+          sudo mv /tmp/.env_prod "$DEPLOY_DIR/.env"
+          sudo chown $(whoami):$(whoami) "$DEPLOY_DIR/.env"
+          echo ".env copied to $DEPLOY_DIR/.env"
+
+      # Install only production dependencies inside the deploy directory
       - name: Install production dependencies
         run: |
           cd /opt/ec-2-test
           npm ci --only=production
           echo "Production dependencies installed"
 
+      # Start or restart the app with PM2
       - name: Start or restart backend with PM2
         run: |
           cd /opt/ec-2-test
