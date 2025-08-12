@@ -68,7 +68,7 @@ jobs:
           pm2 restart backend
           echo "Backend restarted"
           else
-            pm2 start dist/index.js --name backend
+            pm2 start dist/server.js --name backend
             echo "Backend started"
           fi
           pm2 save
