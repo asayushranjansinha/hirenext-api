@@ -3,6 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -23,54 +24,42 @@ jobs:
           node-version: ${{ matrix['node-version'] }}
           cache: 'npm'
 
-      # Step 3: Install dependencies
       - name: Install dependencies
-        run: |
-          echo "Installing project dependencies..."
-          npm ci  # Use ci instead of install for production deployments
+        run: npm ci
 
-      # Step 4: Build the TypeScript application
       - name: Build application
-        run: |
-          echo "Building TypeScript application..."
-          npm run build
-          echo "Build completed successfully"
+        run: npm run build
 
-      # Step 5: Deploy application files
       - name: Deploy application files
         run: |
           DEPLOY_DIR="/opt/ec-2-test"
-          sudo mkdir -p $DEPLOY_DIR
+          sudo mkdir -p "$DEPLOY_DIR"
           pm2 stop backend 2>/dev/null || echo "App not running"
-          sudo cp -r ./dist/* $DEPLOY_DIR/
-          sudo cp package.json $DEPLOY_DIR/
-          sudo cp package-lock.json $DEPLOY_DIR/
-          sudo chown -R $USER:$USER $DEPLOY_DIR
+          # Copy the entire dist folder so structure is preserved
+          sudo cp -r ./dist "$DEPLOY_DIR/"
+          sudo cp package.json package-lock.json "$DEPLOY_DIR/"
+          sudo chown -R $USER:$USER "$DEPLOY_DIR"
           echo "Application files deployed to $DEPLOY_DIR"
-
-      # Step 6: Install production dependencies
-      - name: Install production dependencies
-        run: |
-          cd /opt/ec-2-test
-          npm ci --only=production
-          echo "Production dependencies installed"
 
       - name: Create backend .env file
         run: |
           echo "${{ secrets.PROD_BACKEND_ENV }}" > /opt/ec-2-test/.env
           sudo chown $USER:$USER /opt/ec-2-test/.env
 
-      # Step 7: Start or restart app with PM2
+      - name: Install production dependencies
+        run: |
+          cd /opt/ec-2-test
+          npm ci --only=production
+          echo "Production dependencies installed"
+
       - name: Start or restart backend with PM2
         run: |
           cd /opt/ec-2-test
           if pm2 describe backend > /dev/null 2>&1; then
-          pm2 restart backend
-          echo "Backend restarted"
+            pm2 restart backend
+            echo "Backend restarted"
           else
-            pm2 start dist/server.js --name backend
+            pm2 start dist/index.js --name backend
             echo "Backend started"
           fi
           pm2 save
-
-
