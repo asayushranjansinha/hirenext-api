@@ -7,8 +7,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copy source and build
+# Copy Prisma schema and source files
+COPY prisma ./prisma
 COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build app
 RUN npm run build
 
 # Stage 2: Production image (only production dependencies + built code)
@@ -25,6 +31,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma ./prisma
 
 # Expose your app port
 EXPOSE 8080
