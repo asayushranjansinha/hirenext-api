@@ -5,26 +5,24 @@ HIRENXT is a full-featured learning management, job hunting, and recruitment pla
 
 ## Features
 
-- Basic Node.js/Express API setup
-
-- Deployment-ready Dockerfile and configuration for easy containerization
-
-- Environment variable management
-
-- Instructions for deploying to EC2 instance
-
+- Node.js/Express API setup with TypeScript support
+- Structured API responses using `ApiResponse` utility
+- Centralized error handling with global error middleware
+- 404 handler for unmatched routes
+- Prisma ORM for database operations
+- Logging using Winston and Morgan
+- Deployment-ready Dockerfile and environment management
 - Ready for CI/CD pipeline integration
 
 
 ## Prerequisites
 
-- AWS Account with an EC2 instance running (Ubuntu recommended)
-
+- AWS Account with an EC2 instance (Ubuntu recommended)
 - SSH access configured for your EC2 instance
+- Node.js and npm installed locally
+- Docker installed on EC2 instance (optional, for Docker deployment)
 
-- Node.js and npm installed locally (for development)
 
-- Docker installed on EC2 instance (optional, if using Docker deployment)
 ## Getting Started
 
 - Clone the repository
@@ -62,6 +60,64 @@ HIRENXT is a full-featured learning management, job hunting, and recruitment pla
     ```bash
     npm run start
     ```
+
+## API Response Structure
+All API responses follow a consistent structure using the ApiResponse utility.
+
+### Success Response: 
+```
+{
+  "success": true,
+  "data": {
+    "id": "123",
+    "phoneNumber": "9876543210"
+  },
+  "message": "User created"
+}
+```
+
+### Error Response: 
+```
+{
+  "success": false,
+  "data": null,
+  "message": "User with provided phoneNumber already exists",
+  "errors": {
+    "isOperational": true
+  },
+  "statusCode": 409
+}
+```
+
+### 404 Response: 
+```
+{
+  "success": false,
+  "data": null,
+  "message": "Route not found",
+  "errors": {
+    "url": "/api/unknown",
+    "method": "GET",
+    "ip": "127.0.0.1"
+  },
+  "statusCode": 404
+}
+```
+
+### HTTP Status Codes & ApiError Classes
+
+| Status Code | Error Class               | Description                     | Example Message                |
+|------------:|---------------------------|---------------------------------|--------------------------------|
+| 400         | BadRequestError / ValidationError | Bad request / Validation failed | "Bad request" / "Validation failed" |
+| 401         | UnauthorizedError         | Unauthorized access             | "Unauthorized access"          |
+| 403         | ForbiddenError            | Forbidden access                | "Forbidden access"             |
+| 404         | NotFoundError             | Resource not found              | "Resource not found"           |
+| 409         | ConflictError             | Resource conflict               | "Resource conflict"            |
+| 429         | TooManyRequestsError      | Too many requests               | "Too many requests"            |
+| 500         | InternalServerError       | Internal server error           | "Internal server error"        |
+| 503         | TemporaryServerError      | Service temporarily unavailable | "Temporary server error"       |
+
+
 ## Deployment to EC2
 
 ### Option A: Manual Deployment (without Docker)
@@ -180,4 +236,3 @@ instead of
 ## Authors
 
 - [@asayushranjansinha](https://www.github.com/asayushranjansinha)
-
