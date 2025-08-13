@@ -4,6 +4,7 @@ import morgan from "morgan";
 import { envConfig } from "@/config/env-config.js";
 import { ApiResponse } from "@/utils/api-response.js";
 import authRoutes from "@/modules/auth/auth-routes.js";
+import userRoutes from "@/modules/user/user-routes.js";
 import { errorMiddleware } from "@/middlewares/error-middleware.js";
 
 export const createApp = (): express.Application => {
@@ -37,6 +38,7 @@ export const createApp = (): express.Application => {
   });
 
   app.use("/api/auth", authRoutes);
+  app.use("/api/user", userRoutes);
 
   // 404 handler
   app.use((req, res) => {
