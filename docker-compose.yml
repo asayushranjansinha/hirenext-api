@@ -1,19 +1,26 @@
+version: "3.8"
+
 services:
   api:
     build: .
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - .env.docker
     restart: unless-stopped
     depends_on:
       - database
+    volumes:
+      - ./.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h database -p 5432"]
+      interval: 5s
+      retries: 5
 
   database:
     image: postgres:17-alpine
     container_name: hirenext_postgres
     restart: unless-stopped
-
     environment:
       POSTGRES_USER: hirenext
       POSTGRES_PASSWORD: password
@@ -22,3 +29,8 @@ services:
       - "5432:5432"
     volumes:
       - ./apps/api/.docker/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h database -p 5432 -U hirenext"]
+      interval: 5s
+      retries: 5
+
