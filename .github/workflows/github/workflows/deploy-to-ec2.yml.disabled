@@ -1,5 +1,7 @@
 name: Deploy to EC2
 
+if: false   # disable entire workflow
+
 on:
   push:
     branches: [ main ]
