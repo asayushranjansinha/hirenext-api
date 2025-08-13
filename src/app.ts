@@ -1,6 +1,8 @@
-import { envConfig } from "@/config/env-config.js";
-import prisma from "@/config/prisma-config.js";
 import express from "express";
+import morgan from 'morgan';
+
+import { envConfig } from "@/config/env-config.js";
+import { prisma } from "@/config/prisma-config.js";
 import { UserRole } from "./generated/prisma/enums.js";
 
 export const createApp = (): express.Application => {
@@ -9,6 +11,9 @@ export const createApp = (): express.Application => {
   // Add middlewares
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Logging middleware
+  app.use(morgan('combined'));
 
   // Add routes
   app.get("/api", (_req, res) => {
