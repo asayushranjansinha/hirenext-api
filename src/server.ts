@@ -1,36 +1,37 @@
 import { createApp } from "./app.js";
 import { envConfig } from "@/config/env-config.js";
+import { logger } from "@/config/logger-config.js";
 
 const startServer = async () => {
   try {
     const app = createApp();
 
     const server = app.listen(envConfig.port, () => {
-      console.log(`Server is running on port ${envConfig.port}`);
-      console.log(`Environment: ${envConfig.env}`);
+      logger.info(`Server is running on port ${envConfig.port}`);
+      logger.info(`Environment: ${envConfig.env}`);
     });
 
     server.on("error", (err) => {
-      console.error("❌ Server failed to start: ", err);
+      logger.error("❌ Server failed to start: ", err);
       process.exit(1);
     });
 
     // Graceful shutdown handler
     const gracefulShutdown = async (signal: string) => {
-      console.log(`Received ${signal}. Shutting down gracefully...`);
+      logger.info(`Received ${signal}. Shutting down gracefully...`);
 
       try {
         server.close(() => {
-          console.log("Server closed.");
+          logger.info("Server closed.");
           process.exit(0);
         });
 
         setTimeout(() => {
-          console.log("Forcefully shutting down server in 10 seconds...");
+          logger.info("Forcefully shutting down server in 10 seconds...");
           process.exit(1);
         }, 10000);
       } catch (error) {
-        console.error("❌ Error while closing server: ", error);
+        logger.error("❌ Error while closing server: ", error);
         process.exit(1);
       }
     };
@@ -40,14 +41,14 @@ const startServer = async () => {
 
     // Global error handlers
     process.on("unhandledRejection", (reason) => {
-      console.error("💥 Unhandled Promise Rejection:", reason);
+      logger.error("💥 Unhandled Promise Rejection:", reason);
     });
 
     process.on("uncaughtException", (err) => {
-      console.error("💥 Uncaught Exception:", err);
+      logger.error("💥 Uncaught Exception:", err);
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    logger.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };
