@@ -10,6 +10,7 @@ services:
     restart: unless-stopped
     depends_on:
       - database
+      - redis
     volumes:
       - ./.env:/app/.env:ro
     healthcheck:
@@ -33,4 +34,20 @@ services:
       test: ["CMD-SHELL", "pg_isready -h database -p 5432 -U hirenxt"]
       interval: 5s
       retries: 5
+
+  redis:
+    image: redis:alpine3.22
+    container_name: hirenxt_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ./apps/api/.docker/redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 
