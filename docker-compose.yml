@@ -19,18 +19,18 @@ services:
 
   database:
     image: postgres:17-alpine
-    container_name: hirenext_postgres
+    container_name: hirenxt_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: hirenext
+      POSTGRES_USER: hirenxt
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: hirenext_dev
+      POSTGRES_DB: hirenxt
     ports:
       - "5432:5432"
     volumes:
       - ./apps/api/.docker/pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h database -p 5432 -U hirenext"]
+      test: ["CMD-SHELL", "pg_isready -h database -p 5432 -U hirenxt"]
       interval: 5s
       retries: 5
 

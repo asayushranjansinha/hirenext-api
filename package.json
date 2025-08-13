@@ -1,5 +1,5 @@
 {
-  "name": "ec-2-test",
+  "name": "hirenxt-api",
   "version": "1.0.0",
   "description": "",
   "main": "dist/server.js",
@@ -7,7 +7,6 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc && tsc-alias",
     "start": "node dist/server.js",
-    "lint": "eslint src/**/*.ts --fix",
     "clean": "rm -rf dist"
   },
   "keywords": [],

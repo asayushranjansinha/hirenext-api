@@ -9,7 +9,6 @@ const envSchema = z.object({
   PORT: z.coerce.number(),
   NODE_ENV: z
     .enum(["development", "production", "test"]),
-  FAKE_ENV_VAR: z.string(),
 });
 
 // Parse the environment variables
@@ -20,7 +19,6 @@ export const envConfig = {
   env: env.NODE_ENV,
   isDevelopment: env.NODE_ENV === "development",
   isProduction: env.NODE_ENV === "production",
-  isTest: env.NODE_ENV === "test",
-  fakeEnvVar: env.FAKE_ENV_VAR,
+  isTest: env.NODE_ENV === "test"
 };
 export type EnvConfig = typeof envConfig;

@@ -8,7 +8,6 @@ const startServer = async () => {
     const server = app.listen(envConfig.port, () => {
       console.log(`Server is running on port ${envConfig.port}`);
       console.log(`Environment: ${envConfig.env}`);
-      console.log("Fake env var:", envConfig.fakeEnvVar);
     });
 
     server.on("error", (err) => {

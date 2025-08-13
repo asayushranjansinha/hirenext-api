@@ -1,8 +1,7 @@
 
-# ec-2-test
+# HIRENXT LMS / Job Hunt & Recruitment Platform
 
-ec-2-test is a starter template project designed to help you quickly deploy an API backend to an Amazon EC2 server. This template includes basic setup, deployment instructions, and environment configurations to get your API running smoothly on EC2.
-
+HIRENXT is a full-featured learning management, job hunting, and recruitment platform. This project provides a starter backend template designed to help you quickly deploy APIs for managing courses, job listings, applications, and recruitment workflows. The template includes a basic setup, deployment instructions, and environment configurations to get your backend running smoothly on an Amazon EC2 server.
 
 ## Features
 
@@ -31,8 +30,8 @@ ec-2-test is a starter template project designed to help you quickly deploy an A
 - Clone the repository
 
     ```bash
-    git clone https://github.com/asayushranjansinha/ec-2-test.git
-    cd ec-2-test
+    git clone https://github.com/asayushranjansinha/hirenxt.git
+    cd hirenxt
     ```
 
 - Setup Environment Variables
@@ -43,7 +42,6 @@ ec-2-test is a starter template project designed to help you quickly deploy an A
     # Example environment variables
     NODE_ENV=development
     PORT=8080
-    FAKE_ENV_VAR=running on ec2
     ```
 ## Run Locally
 
@@ -77,8 +75,8 @@ ec-2-test is a starter template project designed to help you quickly deploy an A
 2. Clone your repository on the EC2 instance:
 
     ```bash
-    git clone https://github.com/asayushranjansinha/ec-2-test.git
-    cd ec-2-test
+    git clone https://github.com/asayushranjansinha/hirenxt.git
+    cd hirenxt
     ```
 
 3. Install dependencies:
@@ -113,8 +111,8 @@ ec-2-test is a starter template project designed to help you quickly deploy an A
 2. Copy your project files or clone the repository on EC2:
 
     ```bash
-    git clone https://github.com/asayushranjansinha/ec-2-test.git
-    cd ec-2-test
+    git clone https://github.com/asayushranjansinha/hirenxt.git
+    cd hirenxt
     ```
 
 3. Ensure your `.env` file is present on EC2 (upload or create it).
