@@ -88,7 +88,6 @@ export const verifyOtpController = async (req: Request, res: Response) => {
 
   // Find or create user
   const user = await findOrCreateUserByPhone(phoneNumber);
-  console.log("User: ", user);
 
   // Create tokens
   const accessToken = signAccessToken({ sub: user.id, role: user.role });

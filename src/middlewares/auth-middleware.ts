@@ -14,7 +14,6 @@ export const requireAuth = async (
   try {
     logger.debug("AuthMiddleware: requireAuth → Start");
     const header = req.headers.authorization;
-    console.log("Header: ", header);
     if (!header || !header.startsWith("Bearer ")) {
       logger.debug("AuthMiddleware: requireAuth → No token");
       throw new UnauthorizedError("Unauthorized");

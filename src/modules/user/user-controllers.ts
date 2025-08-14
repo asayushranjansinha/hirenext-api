@@ -10,9 +10,8 @@ import { findByIdService } from "./user-services.js";
 import { UserResponse } from "./user-types.js";
 
 export const getUserController = async (req: Request, res: Response) => {
-  if (!req.user) throw new UnauthorizedError("Unauthorized"); // just to make typescript happy
   logger.debug("UserController: getUser → Start");
-  const id = req.user.id;
+  const id = req.user!.id;
   const select: Prisma.UserSelect = {
     id: true,
     phoneNumber: true,

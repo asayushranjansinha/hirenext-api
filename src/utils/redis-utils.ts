@@ -114,6 +114,8 @@ export const getOrSetCache = async <T>(
   if (cached) {
     return JSON.parse(cached) as T;
   }
-  const value = await fallbackFn();
+    const value = await fallbackFn();
+
   await setWithTags(key, JSON.stringify(value), ttlSeconds, tags);
+  return value;
 };
