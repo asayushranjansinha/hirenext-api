@@ -85,13 +85,13 @@ export const onboardUserController = async (req: Request, res: Response) => {
       )
     );
   } catch (error) {
-    if(error instanceof Prisma.PrismaClientKnownRequestError) {
-      if(error.code === "P2025") {
-        logger.error(
-          `UserController: onboardUser → User not found: ${id}`
-        );
-        throw new BadRequestError("Invalid phone number");
-      }
+    if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      logger.error(
+        `UserController: onboardUser → User not found: ${id}`
+      );
+      throw new UnauthorizedError("User not found");
     }
+    logger.error(`UserController: onboardUser → Error: ${error}`);
+    throw error;
   }
 };
