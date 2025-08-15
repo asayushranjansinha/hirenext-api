@@ -5,9 +5,9 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider     = "prisma-client"           // no `-js` at the end
+  provider     = "prisma-client" // no `-js` at the end
   output       = "../src/generated/prisma" // `output` is required
-  moduleFormat = "esm"  
+  moduleFormat = "esm"
 }
 
 datasource db {
@@ -23,12 +23,34 @@ enum UserRole {
   RECRUITER
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
 model User {
   id            String   @id @default(cuid())
-  phoneNumber   String?  @unique
+  phoneNumber   String  @unique
   googleId      String?  @unique
   role          UserRole @default(STUDENT)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   lastRefreshId String?
+  hasOnboarded  Boolean  @default(false)
+
+  isActive Boolean @default(true)
+  age      Int?
+  gender   Gender?
+  name     String?
+  email    String? @unique
+
+  bio             String?
+  education       String?
+  schoolOrCollege String?
+  interests       String[]
+  skills          String[]
+
+  // Index for faster lookups
+  @@index([role])
 }
