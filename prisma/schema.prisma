@@ -48,8 +48,8 @@ model User {
   bio             String?
   education       String?
   schoolOrCollege String?
-  interests       String[]
-  skills          String[]
+  interests       String[] @default([])
+  skills          String[] @default([])
 
   // Index for faster lookups
   @@index([role])

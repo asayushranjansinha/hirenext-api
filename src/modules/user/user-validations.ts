@@ -13,7 +13,7 @@ export const onboardUserSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, { message: "Name is required" })
+    .min(1, { message: "Name cannot be empty" })
     .max(100, { message: "Name must be less than 100 characters" })
     .optional(),
 
