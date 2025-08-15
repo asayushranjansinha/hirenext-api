@@ -2,9 +2,10 @@ import { UserRole } from "@/generated/prisma/enums.js";
 
 export type AuthUser = {
   id: string;
-  phoneNumber: string | null;
-  name?: string | null;
+  phoneNumber: string;
+  name: string | null;
   role: UserRole;
+  hasOnboarded: boolean;
 };
 export interface AuthTokens {
   accessToken: string;
