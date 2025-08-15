@@ -66,26 +66,32 @@ export const onboardUserController = async (req: Request, res: Response) => {
 
   const data = body.data;
 
-  // Update user
-  const updated = await updateService(id, data);
-  if (!updated) {
-    logger.error(`UserController: onboardUser → User not found: ${id}`);
-    throw new UnauthorizedError("User not found");
-  }
-
-  logger.debug(`UserController: onboardUser → User updated: ${id}`);
-  return res.status(200).json(
-    ApiResponse.success<UserResponse>(
-      {
-        user: {
-          id: updated.id,
-          phoneNumber: updated.phoneNumber,
-          name: updated.name,
-          role: updated.role,
-          hasOnboarded: updated.hasOnboarded,
+  try {
+    // Update user
+    const updated = await updateService(id, data);
+    logger.debug(`UserController: onboardUser → User updated: ${id}`);
+    return res.status(200).json(
+      ApiResponse.success<UserResponse>(
+        {
+          user: {
+            id: updated.id,
+            phoneNumber: updated.phoneNumber,
+            name: updated.name,
+            role: updated.role,
+            hasOnboarded: updated.hasOnboarded,
+          },
         },
-      },
-      "User updated successfully"
-    )
-  );
+        "User updated successfully"
+      )
+    );
+  } catch (error) {
+    if(error instanceof Prisma.PrismaClientKnownRequestError) {
+      if(error.code === "P2025") {
+        logger.error(
+          `UserController: onboardUser → User not found: ${id}`
+        );
+        throw new BadRequestError("Invalid phone number");
+      }
+    }
+  }
 };

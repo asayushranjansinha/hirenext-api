@@ -104,6 +104,7 @@ export const verifyOtpController = async (req: Request, res: Response) => {
           phoneNumber: user.phoneNumber,
           role: user.role,
           hasOnboarded: user.hasOnboarded,
+          name: user.name,
         },
         tokens: {
           accessToken,
@@ -145,6 +146,7 @@ export const refreshTokenController = async (req: Request, res: Response) => {
           phoneNumber: user.phoneNumber,
           role: user.role,
           hasOnboarded: user.hasOnboarded,
+          name: user.name,
         },
         tokens: {
           accessToken,
