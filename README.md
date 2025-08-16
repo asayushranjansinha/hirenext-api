@@ -14,6 +14,15 @@ HIRENXT is a full-featured learning management, job hunting, and recruitment pla
 - Deployment-ready Dockerfile and environment management
 - Ready for CI/CD pipeline integration
 
+### Job Module
+- [x] Filtering, sorting, and pagination for job listings
+- [x] Data validation and DTO layer for clean API input
+- [x] Caching improvements for filtered job lists
+- [x] Job application integration
+- [x] Authorization rules for job ownership
+- [x] Soft delete and job status handling
+- [x] Performance optimizations (query select, indexing)
+
 
 ## Prerequisites
 
