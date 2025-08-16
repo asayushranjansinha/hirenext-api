@@ -51,38 +51,57 @@ export const checkExists = async (key: string) => {
   return !!exists;
 };
 
+/**
+ * Set a cache value and associate it with one or more tags.
+ * When the tag is invalidated, all associated keys will be deleted.
+ */
 export const setWithTags = async (
   key: string,
   value: string,
   ttlSeconds?: number,
   tags: string[] = []
 ) => {
+  if (!tags.length) {
+    // No tags, just set normally
+    return setCache(key, value, ttlSeconds);
+  }
+
+  const pipeline = redis.multi();
+
+  // Set the value (with or without TTL)
   if (ttlSeconds) {
-    await redis.set(key, value, "EX", ttlSeconds);
+    pipeline.set(key, value, "EX", ttlSeconds);
     logger.debug(
       `Redis: SET → Key: ${key} | TTL: ${ttlSeconds}s | Tags: [${tags.join(
         ", "
       )}]`
     );
   } else {
-    await redis.set(key, value);
-    logger.debug(`Redis: SET → Key: ${key}`);
+    pipeline.set(key, value);
+    logger.debug(`Redis: SET → Key: ${key} | Tags: [${tags.join(", ")}]`);
   }
-  logger.debug(`Redis: SET → Key: ${key} | Tags: [${tags.join(", ")}]`);
-  const pipeline = redis.multi();
+
+  // Add the key to each tag set
   for (const tag of tags) {
     pipeline.sadd(tagKey(tag), key);
   }
+
+  await pipeline.exec();
+  return true;
 };
 
+/**
+ * Invalidate all keys associated with a tag.
+ */
 export const invalidateTag = async (tag: string) => {
   const _tagKey = tagKey(tag);
   const keys = await redis.smembers(_tagKey);
 
   if (keys.length > 0) {
-    await redis.del(...keys);
+    await redis.del(...keys); // delete all cached keys
     logger.debug(`Redis: DEL → ${keys.length} keys under tag ${tag}`);
   }
+
   await redis.del(_tagKey); // delete the tag set itself
   return !!keys.length;
 };
@@ -92,6 +111,7 @@ export const increment = async (key: string) => {
   logger.debug(`Redis: INCR → Key: ${key} | Count: ${count}`);
   return count;
 };
+
 export const decrement = async (key: string) => {
   const count = await redis.decr(key);
   logger.debug(`Redis: DECR → Key: ${key} | Count: ${count}`);
@@ -104,6 +124,10 @@ export const expire = async (key: string, ttlSeconds: number) => {
   return !!res;
 };
 
+/**
+ * Get a cache value if it exists, otherwise run a fallback function
+ * and cache the result under the given tags.
+ */
 export const getOrSetCache = async <T>(
   key: string,
   ttlSeconds: number,
@@ -114,8 +138,8 @@ export const getOrSetCache = async <T>(
   if (cached) {
     return JSON.parse(cached) as T;
   }
-    const value = await fallbackFn();
 
+  const value = await fallbackFn();
   await setWithTags(key, JSON.stringify(value), ttlSeconds, tags);
   return value;
 };
