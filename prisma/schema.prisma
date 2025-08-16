@@ -29,9 +29,17 @@ enum Gender {
   OTHER
 }
 
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  REMOTE
+}
+
 model User {
   id            String   @id @default(cuid())
-  phoneNumber   String  @unique
+  phoneNumber   String   @unique
   googleId      String?  @unique
   role          UserRole @default(STUDENT)
   createdAt     DateTime @default(now())
@@ -39,18 +47,67 @@ model User {
   lastRefreshId String?
   hasOnboarded  Boolean  @default(false)
 
-  isActive Boolean @default(true)
-  age      Int?
-  gender   Gender?
-  name     String?
-  email    String? @unique
-
+  isActive        Boolean  @default(true)
+  age             Int?
+  gender          Gender?
+  name            String?
+  email           String?  @unique
   bio             String?
   education       String?
   schoolOrCollege String?
   interests       String[] @default([])
   skills          String[] @default([])
 
-  // Index for faster lookups
+  // Relations
+  createdJobs      Job[]     @relation("UserJobs")
+  createdCompanies Company[] @relation("UserCompanies")
+
   @@index([role])
+}
+
+model Job {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  type        JobType
+
+  // Details
+  overview         String
+  salaryRange      String?
+  postingUrl       String
+  location         String?
+  locationKey      String? // normalized for search
+  requirements     String[]
+  benefits          String[]
+  responsibilities String[]
+  skills           String[]
+  isOpen           Boolean   @default(true)
+  expiresAt        DateTime?
+  postedAt         DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  company   Company @relation("CompanyJobs", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+
+  createdBy   User   @relation("UserJobs", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+
+  @@index([isOpen])
+}
+
+model Company {
+  id      String  @id @default(cuid())
+  name    String
+  website String?
+
+  // Relations
+  jobs        Job[]  @relation("CompanyJobs")
+  createdBy   User   @relation("UserCompanies", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
 }

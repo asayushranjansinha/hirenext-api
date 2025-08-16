@@ -14,6 +14,38 @@ HIRENXT is a full-featured learning management, job hunting, and recruitment pla
 - Deployment-ready Dockerfile and environment management
 - Ready for CI/CD pipeline integration
 
+### Job Module
+- [x] Filtering, sorting, and pagination for job listings
+- [x] Data validation and DTO layer for clean API input
+- [x] Caching improvements for filtered job lists
+- [x] Job application integration
+- [x] Authorization rules for job ownership
+- [x] Soft delete and job status handling
+- [x] Performance optimizations (query select, indexing)
+
+#### API Routes
+
+| Method     | Endpoint                         | Description                                 | Auth Required         |
+| ---------- | -------------------------------- | ------------------------------------------- | --------------------- |
+| **GET**    | `/api/jobs`                      | Get all jobs (optional filters, pagination) | ❌                     |
+| **GET**    | `/api/jobs/:id`                  | Get a job by ID                             | ❌                     |
+| **POST**   | `/api/jobs`                      | Create a new job posting                    | ✅ (Admin / Recruiter / Super Admin)                    |
+| **PUT**    | `/api/jobs/:id`                  | Update job details by ID                    | ✅ (Job owner) |
+| **DELETE** | `/api/jobs/:id`                  | Delete a job (soft delete)                  | ✅ (Job owner) |
+| **GET**    | `/api/companies/:companyId/jobs` | Get jobs for a specific company             | ❌                     |
+| **GET**    | `/api/jobs/search`               | Search jobs by title, location, or keywords | ❌                     |
+
+
+#### Query Parameters for /api/jobs
+| Parameter   | Type   | Description                                                                           |
+| ----------- | ------ | ------------------------------------------------------------------------------------- |
+| `location`  | string | Filter jobs by location                                                               |
+| `type`      | enum   | Filter by job type (values from `JobType` enum, e.g., `FULL_TIME`, `PART_TIME`, etc.) |
+| `companyId` | string | Filter by company ID                                                                  |
+| `keyword`   | string | Search keyword in title/description                                                   |
+| `page`      | number | Page number (default: `1`, min: `1`)                                                  |
+| `limit`     | number | Number of results per page (default: `10`, max: `100`)                                |
+
 
 ## Prerequisites
 

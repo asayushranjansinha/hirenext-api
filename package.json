@@ -9,6 +9,9 @@
     "start": "node dist/server.js",
     "clean": "rm -rf dist"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

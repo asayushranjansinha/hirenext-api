@@ -5,6 +5,8 @@ import { envConfig } from "@/config/env-config.js";
 import { ApiResponse } from "@/utils/api-response.js";
 import authRoutes from "@/modules/auth/auth-routes.js";
 import userRoutes from "@/modules/user/user-routes.js";
+import jobRoutes from '@/modules/job/job-routes.js';
+import companyRoutes from '@/modules/job/company-routes.js';
 import { errorMiddleware } from "@/middlewares/error-middleware.js";
 
 export const createApp = (): express.Application => {
@@ -39,6 +41,8 @@ export const createApp = (): express.Application => {
 
   app.use("/api/auth", authRoutes);
   app.use("/api/user", userRoutes);
+  app.use("/api/jobs", jobRoutes);
+  app.use("/api/companies", companyRoutes);
 
   // 404 handler
   app.use((req, res) => {
