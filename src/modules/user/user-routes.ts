@@ -1,12 +1,16 @@
 import { Router } from "express";
 
 import {
+  getApplications,
   getUserController,
   onboardUserController,
 } from "./user-controllers.js";
 import { requireAuth } from "@/middlewares/auth-middleware.js";
 
 const router = Router();
+
+// GET /user/my/applications
+router.get("/my/applications", requireAuth, getApplications);
 
 /**
  * @route   GET /user

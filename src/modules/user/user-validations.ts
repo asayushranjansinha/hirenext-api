@@ -49,3 +49,8 @@ export const onboardUserSchema = z.object({
 });
 
 export type OnboardUserInput = z.infer<typeof onboardUserSchema>;
+
+export const querySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+});

@@ -28,6 +28,7 @@ export const jobListSelect = {
   expiresAt: true,
   companyId: true,
   company: { select: jobCompanySelect },
+  _count: { select: { applications: true } },
 } satisfies Prisma.JobSelect;
 
 // Job detail select (full data for single job)
