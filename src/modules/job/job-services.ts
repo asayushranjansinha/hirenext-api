@@ -154,9 +154,17 @@ export const toggleStatus = async (
   id: string,
   isOpen: boolean
 ): Promise<JobDetail> => {
-  return prisma.job.update({
+  const updated = await prisma.job.update({
     where: { id },
     data: { isOpen },
     select: jobDetailSelect,
   });
+
+  await Promise.all([
+    invalidateTag(CACHE_TAGS.JOBS),
+    invalidateTag(`${CACHE_TAGS.COMPANY_ALL}:${updated.companyId}`),
+    deleteCache(createCacheKey("job:detail", [id])),
+  ]);
+
+  return updated;
 };

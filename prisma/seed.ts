@@ -3,31 +3,27 @@ import { PrismaClient, UserRole } from "../src/generated/prisma/client.js";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Check if SUPER_ADMIN already exists
-  const existing = await prisma.user.findFirst({
-    where: { role: UserRole.SUPER_ADMIN },
-  });
-
-  if (existing) {
-    console.log("✅ Super admin already exists:", existing.phoneNumber);
-    return;
-  }
-
-  // Create SUPER_ADMIN user
-  const superAdmin = await prisma.user.create({
-    data: {
-      phoneNumber: "9876543210", // change to your admin phone
+  const superAdmin = await prisma.user.upsert({
+    where: { phoneNumber: "+919876543210" },
+    create: {
+      phoneNumber: "+919876543210",
       name: "Super Admin",
-      email: "superadmin@example.com",
+      email: "superadmin@hirenext.com",
       role: UserRole.SUPER_ADMIN,
-      isActive: true,
-      hasOnboarded: true,
-      skills: ["management", "administration"],
-      interests: ["system setup", "user management"],
+      schoolOrCollege: "Hirenxt",
+      age: 25,
+      bio: "I am a super admin",
+    },
+    update: {
+      phoneNumber: "+919876543210",
+      name: "Super Admin",
+      email: "superadmin@hirenext.com",
+      role: UserRole.SUPER_ADMIN,
+      schoolOrCollege: "Hirenxt",
+      age: 25,
+      bio: "I am a super admin",
     },
   });
-
-  console.log("🎉 Super admin created:", superAdmin);
 }
 
 main()

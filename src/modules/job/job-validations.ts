@@ -32,7 +32,7 @@ export const createSchema = z.object({
   skills: z
     .array(z.string().trim().min(1))
     .min(1, { message: "At least one skill is required" }),
-  expiresAt: z.string().optional(),
+  expiresAt: z.coerce.date().optional(),
 });
 
 export const filterSchema = z.object({

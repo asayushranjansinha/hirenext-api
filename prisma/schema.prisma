@@ -98,7 +98,7 @@ model Job {
 
 model Company {
   id      String  @id @default(cuid())
-  name    String
+  name    String  @unique
   website String?
 
   // Relations
