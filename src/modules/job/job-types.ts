@@ -86,3 +86,39 @@ export const applicationCreateSelect = {
 export type ApplicationCreateItem = Prisma.JobApplicationGetPayload<{
   select: typeof applicationCreateSelect;
 }>;
+
+export const applicationUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phoneNumber: true,
+} satisfies Prisma.UserSelect;
+
+export const applicationJobSelect = {
+  id: true,
+  title: true,
+  company: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} satisfies Prisma.JobSelect;
+
+export const applicationDetailSelect = {
+  id: true,
+  status: true,
+  appliedAt: true,
+  resumeUrl: true,
+  coverLetter: true,
+  applicantId: true,
+  jobId: true,
+  applicant: { select: applicationUserSelect },
+  job: {
+    select: applicationJobSelect,
+  },
+} satisfies Prisma.JobApplicationSelect;
+
+export type ApplicationDetail = Prisma.JobApplicationGetPayload<{
+  select: typeof applicationDetailSelect;
+}>;

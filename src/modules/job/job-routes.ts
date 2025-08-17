@@ -10,6 +10,7 @@ import {
   updateController,
   toggleStatusController,
   applyController,
+  updateApplicationController,
 } from "./job-controllers.js";
 
 const router = Router();
@@ -29,6 +30,14 @@ router.post(
   requireAuth,
   requireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.RECRUITER]),
   createController
+);
+
+// PUT /jobs/:id/applications/:applicationId/status
+router.put(
+  "/:id/applications/:applicationId/status",
+  requireAuth,
+  requireRole([UserRole.RECRUITER, UserRole.SUPER_ADMIN]),
+  updateApplicationController
 );
 
 // PUT /jobs/:id

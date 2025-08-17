@@ -7,12 +7,10 @@ import {
   invalidateTag,
 } from "@/utils/redis-utils.js";
 import { applicationListSelect } from "./user-types.js";
+import { CACHE_TAGS } from "@/constants/cache-tags.js";
 
 const CACHE_TTL = 300; // 5 minutes
-const CACHE_TAGS = {
-  USER_APPLICATIONS: "user-applications",
-  APPLICATIONS: "applications",
-} as const;
+
 
 export const findByIdService = async (
   id: string,
@@ -28,7 +26,7 @@ export const findByIdService = async (
   return getOrSetCache(
     key,
     300, // TTL in seconds
-    [`user:${id}`],
+    [`${CACHE_TAGS.USER}:${id}`], // Use consistent user tag
     async () => {
       return prisma.user.findUnique({
         where: { id },
@@ -50,9 +48,8 @@ export const updateService = async (
     },
   });
 
-  // Invalidate tag
-  const tag = `user:${id}`;
-  await invalidateTag(tag);
+  // Invalidate user-specific cache
+  await invalidateTag(`${CACHE_TAGS.USER}:${id}`);
 
   return updated;
 };
@@ -66,7 +63,10 @@ export const findApplications = async (
   return getOrSetCache(
     cacheKey,
     CACHE_TTL,
-    [`${CACHE_TAGS.USER_APPLICATIONS}:${userId}`],
+    [
+      `${CACHE_TAGS.USER_APPLICATIONS}:${userId}`,
+      CACHE_TAGS.APPLICATIONS, // Also tag with global applications
+    ],
     async () => {
       const [applications, total] = await Promise.all([
         prisma.jobApplication.findMany({
