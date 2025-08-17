@@ -9,6 +9,8 @@ import {
   getDetailsController,
   updateController,
   toggleStatusController,
+  applyController,
+  updateApplicationController,
 } from "./job-controllers.js";
 
 const router = Router();
@@ -19,12 +21,23 @@ router.get("/", getByFilters);
 // GET /jobs/:id
 router.get("/:id", getDetailsController);
 
+// POST /jobs/:id/apply
+router.post("/:id/apply", requireAuth, applyController);
+
 // POST /jobs/
 router.post(
   "/",
   requireAuth,
   requireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.RECRUITER]),
   createController
+);
+
+// PUT /jobs/:id/applications/:applicationId/status
+router.put(
+  "/:id/applications/:applicationId/status",
+  requireAuth,
+  requireRole([UserRole.RECRUITER, UserRole.SUPER_ADMIN]),
+  updateApplicationController
 );
 
 // PUT /jobs/:id

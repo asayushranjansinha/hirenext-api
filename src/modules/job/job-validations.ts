@@ -1,8 +1,13 @@
-import { JobType } from "@/generated/prisma/enums.js";
+import { ApplicationStatus, JobType } from "@/generated/prisma/enums.js";
 import { z } from "zod";
 
-export const jobIdSchema = z.object({
-  id: z.cuid({ message: "Invalid job ID format" }),
+
+export const jobIdSchema = z.cuid({
+  message: "Invalid job ID format",
+});
+
+export const applicationIdSchema = z.cuid({
+  message: "Invalid application ID format",
 });
 
 export const createSchema = z.object({
@@ -74,4 +79,23 @@ export const updateSchema = z.object({
     .array(z.string().trim().min(1))
     .min(1, { message: "At least one skill is required" }),
   expiresAt: z.string().optional(),
+});
+
+export const applicationSchema = z.object({
+  resumeUrl: z.url({ message: "Invalid resume URL" }),
+  coverLetter: z.url({ message: "Invalid cover letter URL" }).optional(),
+  notes: z
+    .string()
+    .trim()
+    .min(10, { message: "Notes must be at least 10 characters long or empty" })
+    .optional(),
+});
+
+export const updateApplicationStatusSchema = z.object({
+  status: z.enum(ApplicationStatus),
+  notes: z
+    .string()
+    .trim()
+    .min(10, { message: "Notes must be at least 10 characters long or empty" })
+    .optional(),
 });

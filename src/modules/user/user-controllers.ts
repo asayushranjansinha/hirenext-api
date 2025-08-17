@@ -7,8 +7,12 @@ import { BadRequestError, UnauthorizedError } from "@/utils/app-error.js";
 
 import { UserResponse } from "./user-types.js";
 import { parseZodError } from "@/utils/error-utils.js";
-import { onboardUserSchema } from "./user-validations.js";
-import { findByIdService, updateService } from "./user-services.js";
+import { onboardUserSchema, querySchema } from "./user-validations.js";
+import {
+  findByIdService,
+  findApplications,
+  updateService,
+} from "./user-services.js";
 
 export const getUserController = async (req: Request, res: Response) => {
   logger.debug("UserController: getUser → Start");
@@ -85,13 +89,53 @@ export const onboardUserController = async (req: Request, res: Response) => {
       )
     );
   } catch (error) {
-    if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      logger.error(
-        `UserController: onboardUser → User not found: ${id}`
-      );
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      logger.error(`UserController: onboardUser → User not found: ${id}`);
       throw new UnauthorizedError("User not found");
     }
     logger.error(`UserController: onboardUser → Error: ${error}`);
     throw error;
   }
+};
+
+/**
+ * @route GET /user/my/applications
+ * @desc Get user applications
+ * @access Authenticated
+ */
+export const getApplications = async (req: Request, res: Response) => {
+  // Validate user id
+  const userId = req.user!.id;
+  logger.info(`UserController: getApplications → User ID: ${userId}`);
+
+  // Validate request query
+  const query = querySchema.safeParse(req.query);
+  if (!query.success) {
+    const message = parseZodError(query.error);
+    logger.error(
+      `UserController: getApplications → Invalid Query params: ${message}`
+    );
+    throw new BadRequestError(message);
+  }
+  const { page = 1, limit = 10 } = query.data;
+
+  // Find applications
+  const { applications, total } = await findApplications(userId, page, limit);
+  const totalPages = Math.ceil(total / limit);
+  logger.info(
+    `UserController: getApplications → Applications fetched: ${applications.length} | Total pages: ${total}`
+  );
+
+  return res.json(
+    ApiResponse.paginated(applications, {
+      page,
+      limit,
+      totalItems: total,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page < totalPages,
+    })
+  );
 };

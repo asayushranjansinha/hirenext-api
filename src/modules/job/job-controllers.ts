@@ -2,26 +2,42 @@ import type { Request, Response } from "express";
 
 import { logger } from "@/config/logger-config.js";
 import { ApiResponse } from "@/utils/api-response.js";
+import {
+  BadRequestError,
+  ConflictError,
+  UnauthorizedError,
+} from "@/utils/app-error.js";
 import { parseZodError } from "@/utils/error-utils.js";
-import { BadRequestError, UnauthorizedError } from "@/utils/app-error.js";
 
+import { Prisma } from "@/generated/prisma/client.js";
 import { findById as findCompanyById } from "./company-services.js";
 import {
+  apply,
   create,
   deleteOne,
   findByFilters,
   findById,
+  findOne,
   toggleStatus,
   update,
+  updateApplicationStatus,
 } from "./job-services.js";
-import { JobDetail } from "./job-types.js";
 import {
+  ApplicationCreateItem,
+  ApplicationDetail,
+  JobDetail,
+} from "./job-types.js";
+import { normalizeString } from "./job-utils.js";
+import {
+  applicationIdSchema,
+  applicationSchema,
   createSchema,
   filterSchema,
   jobIdSchema,
+  updateApplicationStatusSchema,
   updateSchema,
 } from "./job-validations.js";
-import { normalizeString } from "./job-utils.js";
+import { ApplicationStatus, UserRole } from "@/generated/prisma/enums.js";
 
 /**
  * @route   POST /jobs/
@@ -92,7 +108,7 @@ export const updateController = async (req: Request, res: Response) => {
   logger.info(`JobControllers: updateController → User ID: ${userId}`);
 
   // Validate job id
-  const params = jobIdSchema.safeParse(req.params);
+  const params = jobIdSchema.safeParse(req.params.id);
   if (!params.success) {
     const message = parseZodError(params.error);
     logger.error(
@@ -113,7 +129,7 @@ export const updateController = async (req: Request, res: Response) => {
 
   // Destructure request
   const { data } = body;
-  const { id } = params.data;
+  const id = params.data;
 
   // Verify if job exists
   const job = await findById(id);
@@ -154,7 +170,7 @@ export const deleteController = async (req: Request, res: Response) => {
   logger.info(`JobControllers: deleteController → User ID: ${userId}`);
 
   // Validate job id
-  const params = jobIdSchema.safeParse(req.params);
+  const params = jobIdSchema.safeParse(req.params.id);
   if (!params.success) {
     const message = parseZodError(params.error);
     logger.error(
@@ -164,7 +180,7 @@ export const deleteController = async (req: Request, res: Response) => {
   }
 
   // Destructure request
-  const { id } = params.data;
+  const id = params.data;
 
   // Verify if job exists
   const job = await findById(id);
@@ -201,7 +217,7 @@ export const getDetailsController = async (req: Request, res: Response) => {
   logger.info(`JobControllers: getDetailsController → Start`);
 
   // Validate job id
-  const params = jobIdSchema.safeParse(req.params);
+  const params = jobIdSchema.safeParse(req.params.id);
   if (!params.success) {
     const message = parseZodError(params.error);
     logger.error(
@@ -211,7 +227,7 @@ export const getDetailsController = async (req: Request, res: Response) => {
   }
 
   // Destructure request
-  const { id } = params.data;
+  const id = params.data;
 
   // Verify if job exists
   logger.debug(
@@ -290,7 +306,7 @@ export const toggleStatusController = async (req: Request, res: Response) => {
   logger.info(`JobControllers: toggleStatusController → User ID: ${userId}`);
 
   // Validate job id
-  const params = jobIdSchema.safeParse(req.params);
+  const params = jobIdSchema.safeParse(req.params.id);
   if (!params.success) {
     const message = parseZodError(params.error);
     logger.error(
@@ -300,7 +316,7 @@ export const toggleStatusController = async (req: Request, res: Response) => {
   }
 
   // Destructure request
-  const { id } = params.data;
+  const id = params.data;
 
   // Verify if job exists
   const job = await findById(id);
@@ -331,5 +347,175 @@ export const toggleStatusController = async (req: Request, res: Response) => {
     .status(200)
     .json(
       ApiResponse.success<JobDetail>(updated, "Job status updated successfully")
+    );
+};
+
+/**
+ * @route POST /jobs/:id/apply
+ * @desc  Apply for a job
+ * @access Authenticated
+ */
+export const applyController = async (req: Request, res: Response) => {
+  logger.info(`JobControllers: applyController → Start`);
+
+  // Validate user id
+  const userId = req.user!.id;
+  logger.info(`JobControllers: applyController → User ID: ${userId}`);
+
+  // Validate job id
+  const params = jobIdSchema.safeParse(req.params.id);
+  if (!params.success) {
+    const message = parseZodError(params.error);
+    logger.error(
+      `JobControllers: applyController → Invalid job ID: ${req.params.id}`
+    );
+    throw new BadRequestError(message);
+  }
+  const jobId = params.data;
+
+  // Validate request body with Zod
+  const body = applicationSchema.safeParse(req.body);
+  if (!body.success) {
+    const message = parseZodError(body.error);
+    logger.error(
+      `JobControllers: applyController → Validation failed: ${message}`
+    );
+    throw new BadRequestError(message);
+  }
+  logger.debug(
+    `JobControllers: applyController → Request validation successful`
+  );
+  const data = body.data;
+
+  // Verify if job exists
+  const job = await findOne(jobId, { isOpen: true });
+  if (!job) {
+    logger.error(`JobControllers: applyController → Job not found: ${jobId}`);
+    throw new BadRequestError("Job does not exist or applications closed");
+  }
+
+  try {
+    // apply for the job
+    logger.debug("JobControllers: applyController → Applying for job");
+    const application = await apply(jobId, userId, data);
+    logger.info(`JobControllers: applyController → Application created`);
+
+    // Send response to client
+    return res
+      .status(201)
+      .json(
+        ApiResponse.success<ApplicationCreateItem>(
+          application,
+          "Application created successfully"
+        )
+      );
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      logger.error(
+        `JobControllers: applyController → Already applied for job jobID: ${jobId} | UserID: ${userId}`
+      );
+      throw new ConflictError("Already applied for the job");
+    }
+    throw error;
+  }
+};
+
+/**
+ * @route PUT /jobs/:id/applications/:applicationId/status
+ * @desc Update application status
+ * @access Private (only accessible to RECRUITER | SUPER_ADMIN)
+ */
+export const updateApplicationController = async (req: Request, res: Response) => {
+  logger.info(`JobControllers: updateApplicationStatus → Start`);
+
+  // Validate user id
+  const userId = req.user!.id;
+  logger.info(`JobControllers: updateApplicationStatus → User ID: ${userId}`);
+
+  // Validate job id
+  const jobSchemaResult = jobIdSchema.safeParse(req.params.id);
+  if (!jobSchemaResult.success) {
+    const message = parseZodError(jobSchemaResult.error);
+    logger.error(
+      `JobControllers: updateApplicationStatus → Invalid job ID: ${req.params.id}`
+    );
+    throw new BadRequestError(message);
+  }
+
+  // Validate application id
+  const applicationSchemaResult = applicationIdSchema.safeParse(
+    req.params.applicationId
+  );
+  if (!applicationSchemaResult.success) {
+    const message = parseZodError(applicationSchemaResult.error);
+    logger.error(
+      `JobControllers: updateApplicationStatus → Invalid application ID: ${req.params.applicationId}`
+    );
+    throw new BadRequestError(message);
+  }
+
+  // Destructure request params
+  const applicationId = applicationSchemaResult.data;
+  const jobId = jobSchemaResult.data;
+
+  // Validate request body with Zod
+  const body = updateApplicationStatusSchema.safeParse(req.body);
+  if (!body.success) {
+    const message = parseZodError(body.error);
+    logger.error(
+      `JobControllers: updateApplicationStatus → Validation failed: ${message}`
+    );
+    throw new BadRequestError(message);
+  }
+
+  // Destructure request body
+  const { notes, status } = body.data;
+
+  // Get job entry
+  const job = await findById(jobId);
+  if (!job) {
+    logger.error(
+      `JobControllers: updateApplicationStatus → Job not found: ${jobId}`
+    );
+    throw new BadRequestError("Job not found");
+  }
+
+  // If super admin, skip job ownership check
+  if (req.user?.role !== UserRole.SUPER_ADMIN) {
+    // Only recruiters who created the job can update
+    if (req.user?.role !== UserRole.RECRUITER || job.createdById !== userId) {
+      logger.error(
+        `JobControllers: updateApplicationStatus → User not authorized to update job application: Job ID: ${jobId} | User ID: ${userId} | Application ID: ${applicationId}`
+      );
+      throw new UnauthorizedError();
+    }
+  }
+
+  // Update application status
+  logger.debug(
+    `JobControllers: updateApplicationStatus → Updating application status`
+  );
+  const updated = await updateApplicationStatus(applicationId, status, notes);
+  if (!updated) {
+    logger.error(
+      `JobControllers: updateApplicationStatus → Application not found: ${applicationId}`
+    );
+    throw new BadRequestError("Application not found");
+  }
+  logger.info(
+    `JobControllers: updateApplicationStatus → Application status updated: ${applicationId}`
+  );
+
+  // Send response to client
+  return res
+    .status(200)
+    .json(
+      ApiResponse.success<ApplicationDetail>(
+        updated,
+        "Application status updated successfully"
+      )
     );
 };

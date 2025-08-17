@@ -8,19 +8,18 @@ import {
   invalidateTag,
 } from "@/utils/redis-utils.js";
 import { companySelect, Company } from "./company-types.js";
+import { CACHE_TAGS } from "@/constants/cache-tags.js";
 
 const CACHE_TTL = 300; // 5 minutes
-const CACHE_TAGS = {
-  JOBS: "jobs", // Global jobs list (unfiltered)
-  COMPANY: "company", // Global company list / details
-  COMPANY_ALL: "company-all", // All company-related data (company + its jobs)
-} as const;
 
 // Create company
 export const create = async (
   userId: string,
   data: Omit<Prisma.CompanyCreateInput, "jobs" | "createdBy">
 ): Promise<Company> => {
+  // Invalidate global company list cache
+  await invalidateTag(CACHE_TAGS.COMPANY);
+
   return prisma.company.create({
     data: {
       ...data,
@@ -37,7 +36,10 @@ export const findById = async (id: string): Promise<Company | null> => {
   return getOrSetCache(
     cacheKey,
     CACHE_TTL,
-    [`${CACHE_TAGS.COMPANY_ALL}:${id}`], // tagged so delete/update clears it
+    [
+      `${CACHE_TAGS.COMPANY_ALL}:${id}`, // Company-specific tag for all its data
+      CACHE_TAGS.COMPANY, // Global company tag
+    ],
     async () => {
       return prisma.company.findUnique({
         where: { id },
@@ -53,8 +55,9 @@ export const update = async (
   data: Omit<Prisma.CompanyUpdateInput, "jobs">
 ): Promise<Company> => {
   await Promise.all([
-    invalidateTag(`${CACHE_TAGS.COMPANY_ALL}:${id}`),
-    deleteCache(createCacheKey("company:detail", [id])),
+    invalidateTag(`${CACHE_TAGS.COMPANY_ALL}:${id}`), // Clear company-specific cache
+    invalidateTag(CACHE_TAGS.COMPANY), // Clear global company cache
+    deleteCache(createCacheKey("company:detail", [id])), // Clear specific cache key
   ]);
 
   return prisma.company.update({
@@ -67,8 +70,10 @@ export const update = async (
 // Delete company
 export const deleteOne = async (id: string): Promise<void> => {
   await Promise.all([
-    invalidateTag(`${CACHE_TAGS.COMPANY_ALL}:${id}`),
-    deleteCache(createCacheKey("company:detail", [id])),
+    invalidateTag(`${CACHE_TAGS.COMPANY_ALL}:${id}`), // Clear all company data (including jobs)
+    invalidateTag(CACHE_TAGS.COMPANY), // Clear global company cache
+    invalidateTag(CACHE_TAGS.JOBS), // Clear jobs cache as company jobs will be affected
+    deleteCache(createCacheKey("company:detail", [id])), // Clear specific cache key
   ]);
 
   await prisma.company.delete({ where: { id } });
