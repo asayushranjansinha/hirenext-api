@@ -75,3 +75,13 @@ export const updateSchema = z.object({
     .min(1, { message: "At least one skill is required" }),
   expiresAt: z.string().optional(),
 });
+
+export const applicationSchema = z.object({
+  resumeUrl: z.url({ message: "Invalid resume URL" }),
+  coverLetter: z.url({ message: "Invalid cover letter URL" }).optional(),
+  notes: z
+    .string()
+    .trim()
+    .min(10, { message: "Notes must be at least 10 characters long or empty" })
+    .optional(),
+});

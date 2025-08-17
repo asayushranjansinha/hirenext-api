@@ -37,6 +37,14 @@ enum JobType {
   REMOTE
 }
 
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  SHORTLISTED
+  REJECTED
+  ACCEPTED
+}
+
 model User {
   id            String   @id @default(cuid())
   phoneNumber   String   @unique
@@ -59,8 +67,9 @@ model User {
   skills          String[] @default([])
 
   // Relations
-  createdJobs      Job[]     @relation("UserJobs")
-  createdCompanies Company[] @relation("UserCompanies")
+  createdJobs      Job[]            @relation("UserJobs")
+  createdCompanies Company[]        @relation("UserCompanies")
+  appliedJobs      JobApplication[]
 
   @@index([role])
 }
@@ -78,7 +87,7 @@ model Job {
   location         String?
   locationKey      String? // normalized for search
   requirements     String[]
-  benefits          String[]
+  benefits         String[]
   responsibilities String[]
   skills           String[]
   isOpen           Boolean   @default(true)
@@ -92,6 +101,8 @@ model Job {
 
   createdBy   User   @relation("UserJobs", fields: [createdById], references: [id], onDelete: Cascade)
   createdById String
+
+  applications JobApplication[]
 
   @@index([isOpen])
 }
@@ -110,4 +121,28 @@ model Company {
   updatedAt DateTime @updatedAt
 
   @@index([name])
+}
+
+model JobApplication {
+  id String @id @default(cuid())
+
+  // Relations
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId String
+
+  applicant   User   @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  applicantId String
+
+  // Application details
+  status      ApplicationStatus @default(PENDING)
+  resumeUrl   String
+  coverLetter String?
+  appliedAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Optional: metadata
+  notes String? // recruiter notes / remarks
+
+  @@unique([jobId, applicantId]) // prevent duplicate applications
+  @@index([status])
 }

@@ -9,6 +9,7 @@ import {
   getDetailsController,
   updateController,
   toggleStatusController,
+  applyController,
 } from "./job-controllers.js";
 
 const router = Router();
@@ -18,6 +19,9 @@ router.get("/", getByFilters);
 
 // GET /jobs/:id
 router.get("/:id", getDetailsController);
+
+// POST /jobs/:id/apply
+router.post("/:id/apply", requireAuth, applyController);
 
 // POST /jobs/
 router.post(

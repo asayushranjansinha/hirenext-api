@@ -51,6 +51,7 @@ export const jobDetailSelect = {
   createdById: true,
   company: { select: jobCompanySelect },
   createdBy: { select: jobUserSelect },
+  _count: { select: { applications: true } },
 } satisfies Prisma.JobSelect;
 
 // Generated types from Prisma
@@ -69,3 +70,18 @@ export type JobFilters = {
   companyId?: string;
   keyword?: string;
 };
+
+// APPLICATIONS
+
+// application create select (job application response select)
+export const applicationCreateSelect = {
+  id: true,
+  status: true,
+  appliedAt: true,
+  jobId: true,
+  applicantId: true,
+} satisfies Prisma.JobApplicationSelect;
+
+export type ApplicationCreateItem = Prisma.JobApplicationGetPayload<{
+  select: typeof applicationCreateSelect;
+}>;

@@ -2,26 +2,34 @@ import type { Request, Response } from "express";
 
 import { logger } from "@/config/logger-config.js";
 import { ApiResponse } from "@/utils/api-response.js";
+import {
+  BadRequestError,
+  ConflictError,
+  UnauthorizedError,
+} from "@/utils/app-error.js";
 import { parseZodError } from "@/utils/error-utils.js";
-import { BadRequestError, UnauthorizedError } from "@/utils/app-error.js";
 
+import { Prisma } from "@/generated/prisma/client.js";
 import { findById as findCompanyById } from "./company-services.js";
 import {
+  apply,
   create,
   deleteOne,
   findByFilters,
   findById,
+  findOne,
   toggleStatus,
   update,
 } from "./job-services.js";
-import { JobDetail } from "./job-types.js";
+import { ApplicationCreateItem, JobDetail } from "./job-types.js";
+import { normalizeString } from "./job-utils.js";
 import {
+  applicationSchema,
   createSchema,
   filterSchema,
   jobIdSchema,
   updateSchema,
 } from "./job-validations.js";
-import { normalizeString } from "./job-utils.js";
 
 /**
  * @route   POST /jobs/
@@ -332,4 +340,79 @@ export const toggleStatusController = async (req: Request, res: Response) => {
     .json(
       ApiResponse.success<JobDetail>(updated, "Job status updated successfully")
     );
+};
+
+/**
+ * @route POST /jobs/:id/apply
+ * @desc  Apply for a job
+ * @access Authenticated
+ */
+export const applyController = async (req: Request, res: Response) => {
+  logger.info(`JobControllers: applyController → Start`);
+
+  // Validate user id
+  const userId = req.user!.id;
+  logger.info(`JobControllers: applyController → User ID: ${userId}`);
+
+  // Validate job id
+  const params = jobIdSchema.safeParse(req.params);
+  if (!params.success) {
+    const message = parseZodError(params.error);
+    logger.error(
+      `JobControllers: applyController → Invalid job ID: ${req.params.id}`
+    );
+    throw new BadRequestError(message);
+  }
+  const { id: jobId } = params.data;
+
+  // Validate request body with Zod
+  const body = applicationSchema.safeParse(req.body);
+  if (!body.success) {
+    const message = parseZodError(body.error);
+    logger.error(
+      `JobControllers: applyController → Validation failed: ${message}`
+    );
+    throw new BadRequestError(message);
+  }
+  logger.debug(
+    `JobControllers: applyController → Request validation successful`
+  );
+  const data = body.data;
+
+  // Verify if job exists
+  const job = await findOne(jobId, { isOpen: true });
+  if (!job) {
+    logger.error(
+      `JobControllers: applyController → Job not found: ${params.data.id}`
+    );
+    throw new BadRequestError("Job does not exist or applications closed");
+  }
+
+  try {
+    // apply for the job
+    logger.debug("JobControllers: applyController → Applying for job");
+    const application = await apply(jobId, userId, data);
+    logger.info(`JobControllers: applyController → Application created`);
+
+    // Send response to client
+    return res
+      .status(201)
+      .json(
+        ApiResponse.success<ApplicationCreateItem>(
+          application,
+          "Application created successfully"
+        )
+      );
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      logger.error(
+        `JobControllers: applyController → Already applied for job jobID: ${jobId} | UserID: ${userId}`
+      );
+      throw new ConflictError("Already applied for the job");
+    }
+    throw error;
+  }
 };

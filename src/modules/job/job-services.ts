@@ -1,6 +1,7 @@
 import prisma from "@/config/prisma-config.js";
 import { Prisma } from "@/generated/prisma/client.js";
 
+import { ApplicationStatus } from "@/generated/prisma/enums.js";
 import {
   createCacheKey,
   deleteCache,
@@ -10,18 +11,21 @@ import {
   setWithTags,
 } from "@/utils/redis-utils.js";
 import {
+  ApplicationCreateItem,
+  applicationCreateSelect,
   JobDetail,
   jobDetailSelect,
   JobFilters,
   JobListItem,
-  jobListSelect,
+  jobListSelect
 } from "./job-types.js";
 
 const CACHE_TTL = 300; // 5 minutes
 const CACHE_TAGS = {
-  JOBS: "jobs", // Global jobs list (unfiltered)
-  COMPANY: "company", // Global company list / details
-  COMPANY_ALL: "company-all", // All company-related data (company + its jobs)
+  JOBS: "jobs",
+  COMPANY: "company",
+  COMPANY_ALL: "company-all",
+  APPLICATIONS: "applications",
 } as const;
 
 // Create a job entry in database
@@ -167,4 +171,61 @@ export const toggleStatus = async (
   ]);
 
   return updated;
+};
+
+export const findOne = async (
+  jobId: string,
+  where: Prisma.JobWhereInput
+): Promise<JobDetail | null> => {
+  const cacheKey = createCacheKey("job:detail", [jobId, where]);
+
+  // Try to get from cache
+  const cached = await getCache(cacheKey);
+  if (cached) {
+    return JSON.parse(cached) as JobDetail;
+  }
+
+  const whereInput: Prisma.JobWhereInput = { id: jobId, ...where };
+  // Fetch from DB
+  const job = await prisma.job.findFirst({
+    where: whereInput,
+    select: jobDetailSelect,
+  });
+
+  if (!job) return null;
+
+  // Store with tags: global jobs tag + company-specific tag
+  await setWithTags(cacheKey, JSON.stringify(job), CACHE_TTL, [
+    CACHE_TAGS.JOBS,
+    `${CACHE_TAGS.COMPANY_ALL}:${job.companyId}`,
+  ]);
+
+  return job;
+};
+
+// Apply for a job
+export const apply = async (
+  jobId: string,
+  applicantId: string,
+  data: Pick<
+    Prisma.JobApplicationCreateInput,
+    "notes" | "resumeUrl" | "coverLetter"
+  >
+): Promise<ApplicationCreateItem> => {
+  await Promise.all([
+    invalidateTag(CACHE_TAGS.APPLICATIONS),
+    deleteCache(createCacheKey("job:detail", [jobId])), // so job detail can include fresh applications count
+  ]);
+
+  return prisma.jobApplication.create({
+    data: {
+      applicantId,
+      jobId,
+      resumeUrl: data.resumeUrl,
+      coverLetter: data.coverLetter,
+      status: ApplicationStatus.ACCEPTED,
+      notes: data.notes ?? undefined,
+    },
+    select: applicationCreateSelect,
+  });
 };
